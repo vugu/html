@@ -46,8 +46,6 @@ type parser struct {
 	quirks bool
 	// fragment is whether the parser is parsing an HTML fragment.
 	fragment bool
-	// preserveCase is whether the parse keeps the case of element and attribute names
-	preserveCase bool
 	// context is the context element when parsing an HTML fragment
 	// (section 12.4).
 	context *Node
@@ -2331,7 +2329,7 @@ func ParseOptionEnableScripting(enable bool) ParseOption {
 // The default value is false meaning element and attribute names are converted to lower case.
 func ParseOptionPreserveCase(preserve bool) ParseOption {
 	return func(p *parser) {
-		p.preserveCase = preserve
+		p.tokenizer.PreserveCase(preserve)
 	}
 }
 

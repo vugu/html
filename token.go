@@ -169,6 +169,15 @@ type Tokenizer struct {
 	convertNUL bool
 	// allowCDATA is whether CDATA sections are allowed in the current context.
 	allowCDATA bool
+	// preserveCase is whether TagName() and TagAttr() return original case of element
+	// and attribute name text or if false lower case
+	preserveCase bool
+}
+
+// PreserveCase sets whether TagName() and TagAttr() return original case of element
+// and attribute name text or if false lower case.
+func (z *Tokenizer) PreserveCase(preserveCase bool) {
+	z.preserveCase = preserveCase
 }
 
 // AllowCDATA sets whether or not the tokenizer recognizes <![CDATA[foo]]> as
@@ -1138,7 +1147,11 @@ func (z *Tokenizer) TagName() (name []byte, hasAttr bool) {
 			s := z.buf[z.data.start:z.data.end]
 			z.data.start = z.raw.end
 			z.data.end = z.raw.end
-			return lower(s), z.nAttrReturned < len(z.attr)
+			hasAttr = z.nAttrReturned < len(z.attr)
+			if z.preserveCase {
+				return s, hasAttr
+			}
+			return lower(s), hasAttr
 		}
 	}
 	return nil, false
@@ -1155,7 +1168,12 @@ func (z *Tokenizer) TagAttr() (key, val []byte, moreAttr bool) {
 			z.nAttrReturned++
 			key = z.buf[x[0].start:x[0].end]
 			val = z.buf[x[1].start:x[1].end]
-			return lower(key), unescape(convertNewlines(val), true), z.nAttrReturned < len(z.attr)
+			val = unescape(convertNewlines(val), true)
+			moreAttr = z.nAttrReturned < len(z.attr)
+			if z.preserveCase {
+				return key, val, moreAttr
+			}
+			return lower(key), val, moreAttr
 		}
 	}
 	return nil, nil, false

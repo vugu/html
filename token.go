@@ -66,6 +66,8 @@ func (t TokenType) String() string {
 // Namespace is only used by the parser, not the tokenizer.
 type Attribute struct {
 	Namespace, Key, Val string
+
+	OrigKey string // OrigKey is original case
 }
 
 // A Token consists of a TokenType and some Data (tag name for start and end
@@ -78,6 +80,9 @@ type Token struct {
 	DataAtom atom.Atom
 	Data     string
 	Attr     []Attribute
+
+	OrigData string // OrigData is original case
+	Offset   int    // offset is the starting byte offset into the origial input
 }
 
 // tagString returns a string representation of a tag Token's Data and Attr.
@@ -169,6 +174,8 @@ type Tokenizer struct {
 	convertNUL bool
 	// allowCDATA is whether CDATA sections are allowed in the current context.
 	allowCDATA bool
+	// bufendoffset is the offset into r that len(buf) corresponds to
+	bufendoffset int
 }
 
 // AllowCDATA sets whether or not the tokenizer recognizes <![CDATA[foo]]> as
@@ -215,6 +222,13 @@ func (z *Tokenizer) AllowCDATA(allowCDATA bool) {
 // Tokenizer.Raw method.
 func (z *Tokenizer) NextIsNotRawText() {
 	z.rawTag = ""
+}
+
+// Offset returns the current byte offset into the input reader of the beginning
+// of the current token.
+func (z *Tokenizer) Offset() int {
+	// log.Printf("r.bufendoffset = %d, z.raw=%#v, z.buf=%q", z.bufendoffset, z.raw, z.buf)
+	return z.bufendoffset - len(z.buf) + z.raw.start
 }
 
 // Err returns the error associated with the most recent ErrorToken token.
@@ -276,6 +290,7 @@ func (z *Tokenizer) readByte() byte {
 			return 0
 		}
 		z.buf = buf1[:d+n]
+		z.bufendoffset += n
 	}
 	x := z.buf[z.raw.end]
 	z.raw.end++
@@ -1128,6 +1143,22 @@ func (z *Tokenizer) Text() []byte {
 	return nil
 }
 
+// TagNameAndOrig is like TagName but returns both the lower-cased name and the original name.
+func (z *Tokenizer) TagNameAndOrig() (name []byte, origName []byte, hasAttr bool) {
+	if z.data.start < z.data.end {
+		switch z.tt {
+		case StartTagToken, EndTagToken, SelfClosingTagToken:
+			s := z.buf[z.data.start:z.data.end]
+			z.data.start = z.raw.end
+			z.data.end = z.raw.end
+			name, origName = lowerCopy(s)
+			hasAttr = z.nAttrReturned < len(z.attr)
+			return
+		}
+	}
+	return nil, nil, false
+}
+
 // TagName returns the lower-cased name of a tag token (the `img` out of
 // `<IMG SRC="foo">`) and whether the tag has attributes.
 // The contents of the returned slice may change on the next call to Next.
@@ -1142,6 +1173,25 @@ func (z *Tokenizer) TagName() (name []byte, hasAttr bool) {
 		}
 	}
 	return nil, false
+}
+
+// TagAttrAndOrig is like TagAttr but returns both the lower-cased key and the
+// original key.
+func (z *Tokenizer) TagAttrAndOrig() (key, keyOrig, val []byte, moreAttr bool) {
+	if z.nAttrReturned < len(z.attr) {
+		switch z.tt {
+		case StartTagToken, SelfClosingTagToken:
+			x := z.attr[z.nAttrReturned]
+			z.nAttrReturned++
+			key = z.buf[x[0].start:x[0].end]
+			val = z.buf[x[1].start:x[1].end]
+			key, keyOrig = lowerCopy(key)
+			val = unescape(convertNewlines(val), true)
+			moreAttr = z.nAttrReturned < len(z.attr)
+			return
+		}
+	}
+	return nil, nil, nil, false
 }
 
 // TagAttr returns the lower-cased key and unescaped value of the next unparsed
@@ -1165,21 +1215,24 @@ func (z *Tokenizer) TagAttr() (key, val []byte, moreAttr bool) {
 // valid after subsequent Next calls.
 func (z *Tokenizer) Token() Token {
 	t := Token{Type: z.tt}
+	t.Offset = z.Offset()
 	switch z.tt {
 	case TextToken, CommentToken, DoctypeToken:
 		t.Data = string(z.Text())
+		t.OrigData = t.Data
 	case StartTagToken, SelfClosingTagToken, EndTagToken:
-		name, moreAttr := z.TagName()
+		name, origName, moreAttr := z.TagNameAndOrig()
 		for moreAttr {
-			var key, val []byte
-			key, val, moreAttr = z.TagAttr()
-			t.Attr = append(t.Attr, Attribute{"", atom.String(key), string(val)})
+			var key, origKey, val []byte
+			key, origKey, val, moreAttr = z.TagAttrAndOrig()
+			t.Attr = append(t.Attr, Attribute{Namespace: "", Key: atom.String(key), OrigKey: atom.String(origKey), Val: string(val)})
 		}
 		if a := atom.Lookup(name); a != 0 {
 			t.DataAtom, t.Data = a, a.String()
 		} else {
 			t.DataAtom, t.Data = 0, string(name)
 		}
+		t.OrigData = atom.String(origName)
 	}
 	return t
 }

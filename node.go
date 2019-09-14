@@ -44,6 +44,9 @@ type Node struct {
 	Data      string
 	Namespace string
 	Attr      []Attribute
+
+	OrigData string // OrigData is original case
+	Offset   int    // offset is the starting byte offset into the origial input
 }
 
 // InsertBefore inserts newChild as a child of n, immediately before oldChild
@@ -139,6 +142,8 @@ func (n *Node) clone() *Node {
 		DataAtom: n.DataAtom,
 		Data:     n.Data,
 		Attr:     make([]Attribute, len(n.Attr)),
+		OrigData: n.OrigData,
+		Offset:   n.Offset,
 	}
 	copy(m.Attr, n.Attr)
 	return m

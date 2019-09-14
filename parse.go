@@ -292,8 +292,10 @@ func (p *parser) addText(text string) {
 
 	if p.shouldFosterParent() {
 		p.fosterParent(&Node{
-			Type: TextNode,
-			Data: text,
+			Type:     TextNode,
+			Data:     text,
+			OrigData: text,
+			Offset:   p.tok.Offset,
 		})
 		return
 	}
@@ -304,8 +306,10 @@ func (p *parser) addText(text string) {
 		return
 	}
 	p.addChild(&Node{
-		Type: TextNode,
-		Data: text,
+		Type:     TextNode,
+		Data:     text,
+		OrigData: text,
+		Offset:   p.tok.Offset,
 	})
 }
 
@@ -316,6 +320,8 @@ func (p *parser) addElement() {
 		DataAtom: p.tok.DataAtom,
 		Data:     p.tok.Data,
 		Attr:     p.tok.Attr,
+		OrigData: p.tok.OrigData,
+		Offset:   p.tok.Offset,
 	})
 }
 
@@ -511,8 +517,10 @@ func initialIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.doc.AppendChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -556,8 +564,10 @@ func beforeHTMLIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.doc.AppendChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	}
@@ -595,8 +605,10 @@ func beforeHeadIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -688,8 +700,10 @@ func inHeadIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -790,8 +804,10 @@ func afterHeadIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -1056,6 +1072,8 @@ func inBodyIM(p *parser) bool {
 				DataAtom: a.Input,
 				Data:     a.Input.String(),
 				Attr:     attr,
+				OrigData: a.Input.String(),
+				Offset:   p.tok.Offset,
 			})
 			p.oe.pop()
 			p.parseImpliedToken(EndTagToken, a.Label, a.Label.String())
@@ -1190,8 +1208,10 @@ func inBodyIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case ErrorToken:
 		// TODO: remove this divergence from the HTML5 spec.
@@ -1479,8 +1499,10 @@ func inTableIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -1557,8 +1579,10 @@ func inColumnGroupIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -1644,8 +1668,10 @@ func inTableBodyIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	}
@@ -1821,8 +1847,10 @@ func inSelectIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case DoctypeToken:
 		// Ignore the token.
@@ -1956,8 +1984,10 @@ func afterBodyIM(p *parser) bool {
 			panic("html: bad parser state: <html> element not found, in the after-body insertion mode")
 		}
 		p.oe[0].AppendChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	}
@@ -1970,8 +2000,10 @@ func inFramesetIM(p *parser) bool {
 	switch p.tok.Type {
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case TextToken:
 		// Ignore all text but whitespace.
@@ -2020,8 +2052,10 @@ func afterFramesetIM(p *parser) bool {
 	switch p.tok.Type {
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case TextToken:
 		// Ignore all text but whitespace.
@@ -2072,8 +2106,10 @@ func afterAfterBodyIM(p *parser) bool {
 		}
 	case CommentToken:
 		p.doc.AppendChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 		return true
 	case DoctypeToken:
@@ -2088,8 +2124,10 @@ func afterAfterFramesetIM(p *parser) bool {
 	switch p.tok.Type {
 	case CommentToken:
 		p.doc.AppendChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case TextToken:
 		// Ignore all text but whitespace.
@@ -2132,8 +2170,10 @@ func parseForeignContent(p *parser) bool {
 		p.addText(p.tok.Data)
 	case CommentToken:
 		p.addChild(&Node{
-			Type: CommentNode,
-			Data: p.tok.Data,
+			Type:     CommentNode,
+			Data:     p.tok.Data,
+			OrigData: p.tok.OrigData,
+			Offset:   p.tok.Offset,
 		})
 	case StartTagToken:
 		b := breakout[p.tok.Data]

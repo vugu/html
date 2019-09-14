@@ -193,6 +193,26 @@ func lower(b []byte) []byte {
 	return b
 }
 
+// lowerCopy is like lower() but if lower casing is required the original is
+// copied first and returned as original. if the input is already lower cased
+// then the original slice is returned for both lowered and original
+func lowerCopy(b []byte) (lowered, original []byte) {
+	lowered = b
+	for i, c := range b {
+		if 'A' <= c && c <= 'Z' {
+			if original == nil {
+				original = make([]byte, len(b))
+				copy(original, b)
+			}
+			b[i] = c + 'a' - 'A'
+		}
+	}
+	if original == nil {
+		original = lowered
+	}
+	return
+}
+
 const escapedChars = "&'<>\"\r"
 
 func escape(w writer, s string) error {
